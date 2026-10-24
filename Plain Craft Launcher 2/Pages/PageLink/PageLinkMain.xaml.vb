@@ -427,7 +427,7 @@ Public Class PageLinkMain
     Private Sub InitConfig(Task As LoaderTask(Of Integer, Integer))
         UpdateLoadingPage("正在联网获取配置……", "联网获取配置")
         If VersionBranchMain <> "Official" Then
-            Throw New Exception($"$开源版无法联网获取配置。{vbCrLf}你可以在 PCL 官方版的缓存文件夹下查看 ServerConfig 的当前内容， 并在代码中进行相应修改。")
+            Throw New Exception("$Plain Craft Launcher Open 不使用原版联机服务器。请使用独立的 EasyTier 工具或自行配置联机模块。")
         End If
         ServerLoader.WaitForExit(LoaderToSyncProgress:=Task)
         If ServerConfig Is Nothing Then Throw New Exception("无法从服务器获取配置")
@@ -615,8 +615,8 @@ Public Class PageLinkMain
             Try
                 RawNodes = NetRequestByClient("https://uptime.easytier.cn/api/nodes?page=1&per_page=1000", RequireJson:=True).DeserializeJson()
             Catch exx As Exception
-                Logger.Warn(exx, "从源站获取节点列表失败，将使用 CDN 缓存")
-                RawNodes = NetRequestByClientRetry("https://easytier.meloong.com/?page=1&per_page=1000", RequireJson:=True).DeserializeJson()
+                Logger.Warn(exx, "EasyTier 官方节点目录请求失败")
+                Throw New HttpRequestException("EasyTier 官方目录暂时不可用；Open 版不使用作者中转服务。", exx)
                 IsFallbackRawList = True
             End Try
             '分析节点列表

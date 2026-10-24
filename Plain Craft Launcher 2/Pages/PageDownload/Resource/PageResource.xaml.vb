@@ -55,6 +55,10 @@ Public Class PageResource
         Set(Value As ResourceTypes)
             If _Type = Value Then Return
             _Type = Value
+            If Value = ResourceTypes.Map Then
+                ComboSearchSource.SelectedIndex = 1
+                ComboSearchSource.IsEnabled = False
+            End If
             BtnSearchInstallModPack.Visibility = If(Value = ResourceTypes.ModPack, Visibility.Visible, Visibility.Collapsed)
         End Set
     End Property
@@ -77,6 +81,7 @@ Public Class PageResource
     Public Loader As LoaderTask(Of ResourceSearcher.SearchRequest, Integer) = ResourceSearcher.GetLoader(AddressOf LoaderInput)
 
     Private Sub PageResource_Loaded(sender As Object, e As EventArgs) Handles Me.Loaded
+
         Static IsFirstLoaded As Boolean = False
         '不知道从 Initialized 改成 Loaded 会不会有问题，但用 Initialized 会导致初始的筛选器修改被覆盖回默认值
         If TargetInstance IsNot Nothing Then
@@ -234,7 +239,7 @@ Public Class PageResource
         TextSearchName.Text = ""
         TextSearchVersion.Text = "全部 (也可自行输入)"
         TextSearchVersion.SelectedIndex = 0
-        ComboSearchSource.SelectedIndex = 0
+        ComboSearchSource.SelectedIndex = If(PageType = ResourceTypes.Map, 1, 2)
         ComboSearchTag.SelectedIndex = 0
         ComboSearchLoader.SelectedIndex = 0
         Loader.LastFinishedTime = 0 '要求强制重新开始

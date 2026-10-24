@@ -175,7 +175,7 @@ Public Module ModJava
         Dim RecommendedCode As Integer =
             If(Instance.JsonObject?("javaVersion")?("majorVersion")?.ToObject(Of Integer),
             If(Instance.JsonVersion?("java_version")?.ToObject(Of Integer), 0))
-        If RecommendedCode >= 22 Then
+        If RecommendedCode >= 22 OrElse (Instance.Version.OpenLoaderName IsNot Nothing AndAlso RecommendedCode > 0) Then
             Logger.Info("Mojang 要求至少使用 Java " & RecommendedCode)
             AddConstraint(ValueRange(Of Version).AtLeast(New Version(RecommendedCode, 0)))
             RecommendedComponent =
@@ -199,7 +199,7 @@ Public Module ModJava
         End If
 
         'Forge 检测（部分测试结果见 #8432）
-        If Instance.Version.ModLoaders.HasFlagF(ModLoaders.Forge) Then
+        If Instance.Version.ModLoaders.HasFlagF(ModLoaders.Forge) AndAlso Not Instance.Version.IsCleanroom Then
             If Instance.Version.Vanilla >= New Version(6, 0, 1) AndAlso Instance.Version.Vanilla <= New Version(7, 0, 2) Then
                 '1.6.1 - 1.7.2：必须 Java 7
                 AddConstraint(ValueRange(Of Version).ClosedOpen(New Version(7, 0), New Version(8, 0)))

@@ -1,5 +1,7 @@
 Imports System.ComponentModel
 Imports System.Windows.Interop
+Imports System.Windows.Media
+Imports System.Globalization
 
 Public Class FormMain
 
@@ -311,12 +313,18 @@ Public Class FormMain
         End If
         '刷新主题
         ThemeCheckAll(False)
+        OpenAppearance.InitializeOpen()
         ThemeRefresh(Settings.Get(Of Integer)("UiLauncherTheme"))
         '注册拖拽事件（不能直接加 Handles，否则没用；#6340）
         [AddHandler](DragDrop.DragEnterEvent, New DragEventHandler(AddressOf HandleDrag), handledEventsToo:=True)
         [AddHandler](DragDrop.DragOverEvent, New DragEventHandler(AddressOf HandleDrag), handledEventsToo:=True)
         '加载 UI
         InitializeComponent()
+        Dim BadgeText As New FormattedText("OPEN", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                                           New Typeface("Segoe UI Semibold"), 12, Brushes.Black, VisualTreeHelper.GetDpi(Me).PixelsPerDip)
+        Dim TextShape = BadgeText.BuildGeometry(New Point((50 - BadgeText.Width) / 2, (23 - BadgeText.Height) / 2))
+        ShapeOpenBadge.Data = Geometry.Combine(New RectangleGeometry(New Rect(0, 0, 50, 23), 6, 6),
+                                              TextShape, GeometryCombineMode.Exclude, Nothing)
         Opacity = 0
         '开启管理员权限下的文件拖拽
         If WindowsUtils.HasAdminRole() Then
@@ -434,7 +442,7 @@ Public Class FormMain
                 Thread.Sleep(100)
                 DlClientListMojangLoader.Start(1) 'PCL 会同时根据这里的加载结果决定是否使用官方源进行下载
                 RunCountSub()
-                ServerLoader.Start()
+                ' Open: no author configuration polling.
                 RunInNewThread(AddressOf TryClearTaskTemp, "TryClearTaskTemp", ThreadPriority.BelowNormal)
             Catch ex As Exception
                 Logger.Error(ex, "初始化加载池运行失败")
@@ -449,7 +457,7 @@ Public Class FormMain
             Telemetry("启动")
             '开源版本提示
             If VersionBranchMain = "OpenSource" Then
-                MyMsgBox($"该版本中无法使用以下特性：{vbCrLf}- CurseForge API 调用：需要自行申请 API Key，然后添加到 ModSecret.vb 的开头{vbCrLf}- 正版登录：需要自行向微软申请 Client ID，然后添加到 ModSecret.vb 的开头{vbCrLf}- 更新与联网通知：避免滥用隐患{vbCrLf}- 主题切换：这是需要赞助解锁的纪念性质的功能，别让赞助者太伤心啦……{vbCrLf}- 百宝箱：开发早期往里面塞了些开发工具，整理起来太麻烦了……", "开源版本说明")
+                MyMsgBox("Plain Craft Launcher Open 使用项目官方源和公益镜像，自动竞速、切换并校验文件。" & vbCrLf & "本版本不请求原版作者的后台服务。微软登录使用内置公共 ID，CurseForge 默认使用公益镜像。", "Plain Craft Launcher Open 使用说明")
             End If
         End Sub, "初始化", ThreadPriority.Lowest)
 
@@ -1234,10 +1242,13 @@ Public Class FormMain
         DownloadDataPack = 4
         DownloadResourcePack = 5
         DownloadShader = 6
+        DownloadWorld = 7
+        DownloadFavorites = 8
         SetupLaunch = 0
         SetupLink = 1
         SetupUI = 2
         SetupSystem = 3
+        SetupOpen = 4
         LinkMain = 0
         OtherHelp = 0
         OtherAbout = 1
@@ -1248,6 +1259,10 @@ Public Class FormMain
         InstanceMod = 3
         InstanceModDisabled = 4
         InstanceExport = 5
+        InstanceSaves = 6
+        InstanceScreenshots = 7
+        InstanceResourcePacks = 8
+        InstanceShaders = 9
     End Enum
     ''' <summary>
     ''' 获取次级页面的名称。若并非次级页面则返回空字符串，故可以以此判断是否为次级页面。
@@ -1369,10 +1384,10 @@ Public Class FormMain
             Select Case Stack.Page
                 Case PageType.Download
                     If FrmDownloadLeft Is Nothing Then FrmDownloadLeft = New PageDownloadLeft
-                    CType(FrmDownloadLeft.PanItem.Children(SubType), MyListItem).SetChecked(True, True, Stack = PageCurrent)
+                    FrmDownloadLeft.PanItem.Children.OfType(Of MyListItem)().First(Function(Item) Item.Tag IsNot Nothing AndAlso CInt(Item.Tag) = CInt(SubType)).SetChecked(True, True, Stack = PageCurrent)
                 Case PageType.Setup
                     If FrmSetupLeft Is Nothing Then FrmSetupLeft = New PageSetupLeft
-                    CType(FrmSetupLeft.PanItem.Children(SubType), MyListItem).SetChecked(True, True, Stack = PageCurrent)
+                    FrmSetupLeft.PanItem.Children.OfType(Of MyListItem)().First(Function(Item) Item.Tag IsNot Nothing AndAlso CInt(Item.Tag) = CInt(SubType)).SetChecked(True, True, Stack = PageCurrent)
                 Case PageType.Other
                     If FrmOtherLeft Is Nothing Then FrmOtherLeft = New PageOtherLeft
                     CType(FrmOtherLeft.PanItem.Children(SubType), MyListItem).SetChecked(True, True, Stack = PageCurrent)
@@ -1383,7 +1398,7 @@ Public Class FormMain
             Select Case Stack.Page
                 Case PageType.InstanceSetup
                     If FrmInstanceLeft Is Nothing Then FrmInstanceLeft = New PageInstanceLeft
-                    CType(FrmInstanceLeft.PanItem.Children(SubType), MyListItem).SetChecked(True, True, Stack = PageCurrent)
+                    FrmInstanceLeft.PanItem.Children.OfType(Of MyListItem)().First(Function(Item) Item.Tag IsNot Nothing AndAlso CInt(Item.Tag) = CInt(SubType)).SetChecked(True, True, Stack = PageCurrent)
             End Select
             PageChangeActual(Stack, SubType)
         End If

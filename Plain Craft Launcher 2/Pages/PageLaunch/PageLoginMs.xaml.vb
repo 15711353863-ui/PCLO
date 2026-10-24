@@ -65,6 +65,10 @@ Public Class PageLoginMs
     End Function
 
     Private Sub BtnLogin_Click(sender As Object, e As EventArgs) Handles BtnLogin.Click
+        If String.IsNullOrWhiteSpace(OAuthClientId) Then
+            MyMsgBox("请在 设置 → 账号与资源 中恢复默认 Client ID 或填写有效应用 ID，然后再登录。", "正版登录配置")
+            Return
+        End If
         ComboAccounts.IsEnabled = False
         BtnLogin.IsEnabled = False
         BtnLogin.Text = "0%"

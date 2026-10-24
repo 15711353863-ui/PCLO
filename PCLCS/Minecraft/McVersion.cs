@@ -6,6 +6,9 @@ namespace PCLCS;
 /// Minecraft 版本号和组件信息
 /// </summary>
 public sealed class McVersion {
+    public string? OpenLoaderName { get; set; }
+    public string? OpenLoaderVersion { get; set; }
+    public bool IsCleanroom => OpenLoaderName == "Cleanroom";
     /// <summary>
     /// 原版版本名，如 26.1、26.1-snapshot-1、1.12.2、16w01a。
     /// </summary>
@@ -111,6 +114,8 @@ public sealed class McVersion {
     /// <param name="json">展开的版本 JSON。</param>
     /// <param name="jarVersionJson">版本 JAR 中的 version.json。</param>
     public McVersion(string instanceName, JObject json, JObject? jarVersionJson = null) {
+        OpenLoaderName = (string?)json["pclOpenLoader"]?["name"];
+        OpenLoaderVersion = (string?)json["pclOpenLoader"]?["version"];
         string jsonText = json.ToString(Formatting.None);
         DateTime releaseTime = new(1970, 1, 1, 15, 0, 0); // 未知版本也可能显示为 1970 年
         try {

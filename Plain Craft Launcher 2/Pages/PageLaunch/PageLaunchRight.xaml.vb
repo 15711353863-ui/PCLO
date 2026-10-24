@@ -62,7 +62,7 @@ Public Class PageLaunchRight
                             </local:MyCard>"
                     Case 2
                         Logger.Info("主页预设：Minecraft 新闻")
-                        Url = "https://mcnews.meloong.com"
+                        Content = "<local:MyCard Title=""Plain Craft Launcher Open"" Margin=""0,0,0,15""><TextBlock Margin=""25,38,23,15"" Text=""下载信息来自项目官方源和国内公益镜像。"" /></local:MyCard>"
                     Case 3
                         Logger.Info("主页预设：简单主页")
                         Url = "https://pclhomeplazaoss.lingyunawa.top:26994/d/Homepages/MFn233/Custom.xaml"

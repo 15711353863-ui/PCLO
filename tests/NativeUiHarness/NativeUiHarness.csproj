@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup><TargetFramework>net48</TargetFramework><UseWPF>true</UseWPF><OutputType>Exe</OutputType><LangVersion>13.0</LangVersion><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../PCLCS/PCLCS.csproj"/>
+    <Reference Include="Plain Craft Launcher 2"><HintPath>../../Plain Craft Launcher 2/bin/Plain Craft Launcher 2.exe</HintPath></Reference>
+  </ItemGroup>
+</Project>

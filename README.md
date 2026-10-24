@@ -1,19 +1,17 @@
-# PCLO
+# Plain Craft Launcher Open
 
-![PCLO icon](assets/pclo-128.png)
+![Plain Craft Launcher Open](assets/pclo-128.png)
 
-正式名称：Plain Craft Launcher (PCL) Open 修改版。简称 PCLO，O 代表 Open。
-这是第三方基于 PCL 独立进行二次创作的项目，不代表 PCL 官方。
+简称 PCLO。当前本地预览：0.3.3，尚未上传。
 
-本项目公开全部衍生版源码、修改记录和构建脚本，并为每个发行版提供对应源码。
-PCLO 独立新增文件采用 [MIT](LICENSE-PCLO-MIT)，上游代码及依赖保留各自许可。详见 [许可范围](LICENSING.md)。整个项目不宣称采用单一 MIT 许可。
-服务凭据通过环境变量配置，不包含于源码中。
+这是第三方基于 PCL 独立制作的衍生版。沿用原版界面和蓝色六边形徽章，图标为上方 PCL、下方 OPEN。
+上游作者与贡献者的署名及许可保留在源码和许可文件中。
 
-原作者：龙腾猫跃及上游贡献者。[赞助原作者](https://meloong.com/afd/a/LTCat)。
+Minecraft、加载器和依赖直接使用各项目官方源及国内公益镜像，同时请求、自动选源、失败切换并校验文件。
+启动器后台已断开原作者配置、遥测、新闻和中转目录。详细规则和校验边界见 [下载说明](NETWORK-DESIGN.md)。
 
-当前仓库采用完整源码快照；原始版本指针见预览说明。GitHub Actions 配置位于 `ci/build.yml.example`，因当前上传令牌缺少 workflow 权限，暂未启用云端构建。
-
-预览说明和构建方法见 [PREVIEW-README.md](PREVIEW-README.md)，使用要求见 [LICENCE](LICENCE)。
+公开源码与构建脚本。独立新增文件采用 [MIT](LICENSE-PCLO-MIT)，上游代码和资源保留原许可，详见 [许可范围](LICENSING.md)。
+[使用说明](PREVIEW-README.md) · [新增功能与边界](OPEN-FEATURES.md) · [验证记录](VALIDATION.md) · [本地构建](BUILD-PREVIEW.ps1)
 
 ---
 

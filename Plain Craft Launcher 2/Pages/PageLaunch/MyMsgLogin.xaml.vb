@@ -106,12 +106,12 @@ Public Class MyMsgLogin
         Do While Not MyConverter.IsExited
             Try
                 Dim Result = NetRequestByClient(
-                    "https://login.microsoftonline.com/consumers/oauth2/v2.0/token", HttpMethod.Post,
+                    PCLCS.Open.OpenEndpoints.TokenEndpoint(OAuthClientId), HttpMethod.Post,
                     Content:=
                         "grant_type=urn:ietf:params:oauth:grant-type:device_code" & "&" &
                         "client_id=" & OAuthClientId & "&" &
                         "device_code=" & DeviceCode & "&" &
-                        "scope=XboxLive.signin%20offline_access",
+                        "scope=" & Uri.EscapeDataString(PCLCS.Open.OpenEndpoints.Scope(OAuthClientId)),
                     ContentType:="application/x-www-form-urlencoded",
                     Timeout:=5000 + UnknownFailureCount * 5000,
                     MakeLog:=False, RequireJson:=True)

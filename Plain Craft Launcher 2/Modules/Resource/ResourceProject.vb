@@ -165,6 +165,8 @@ Public Class ResourceProject
                 'Type
                 If Website.Contains("/mc-mods/") OrElse Website.Contains("/mod/") Then
                     Types = ResourceTypes.Mod
+                ElseIf Website.Contains("/worlds/") OrElse CInt(If(Data("classId"), 0)) = 17 Then
+                    Types = ResourceTypes.Map
                 ElseIf Website.Contains("/modpacks/") Then
                     Types = ResourceTypes.ModPack
                 ElseIf Website.Contains("/resourcepacks/") Then
@@ -559,10 +561,10 @@ Public Class ResourceProject
                 NewItem.LabVersion.Text = ModLoaderDescriptionFull
             End If
             NewItem.LabSource.Text = Platform.ToString
-            NewItem.LabTime.Text = StringUtils.FormatTimeSpan(LastUpdate - Date.Now, True)
+            NewItem.LabTime.Text = If(LastUpdate = Date.MinValue, "无", StringUtils.FormatTimeSpan(LastUpdate - Date.Now, True))
             NewItem.LabDownload.Text =
-                If(DownloadCount > 100000000, Math.Round(DownloadCount / 100000000, 2) & " 亿",
-                If(DownloadCount > 100000, Math.Floor(DownloadCount / 10000) & " 万", DownloadCount))
+                If(DownloadCount <= 0, "无", If(DownloadCount > 100000000, Math.Round(DownloadCount / 100000000, 2) & " 亿",
+                If(DownloadCount > 100000, Math.Floor(DownloadCount / 10000) & " 万", DownloadCount.ToString())))
             Return NewItem
         End Function) With {.Height = 64}
     End Function

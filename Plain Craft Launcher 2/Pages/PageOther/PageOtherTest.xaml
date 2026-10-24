@@ -7,6 +7,27 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     PanScroll="PanBack">
     <local:MyScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" x:Name="PanBack">
-        <TextBlock Text="为便于维护，开源内容中不包含百宝箱功能……" HorizontalAlignment="Center" FontSize="15" Height="30" VerticalAlignment="Center" />
+        <StackPanel Margin="25,25,25,10">
+            <local:MyCard Title="百宝箱" Margin="0,0,0,15">
+                <StackPanel Margin="20,42,20,18">
+                    <TextBlock Text="常用的本地工具" Margin="0,0,0,12" />
+                    <WrapPanel>
+                        <local:MyButton x:Name="BtnOpenCache" Text="打开缓存文件夹" MinWidth="130" Height="35" Padding="13,0" Margin="0,0,12,10" />
+                        <local:MyButton x:Name="BtnOptimizeMemory" Text="整理内存" MinWidth="130" Height="35" Padding="13,0" Margin="0,0,12,10" />
+                        <local:MyButton x:Name="BtnOpenLauncher" Text="打开启动器文件夹" MinWidth="150" Height="35" Padding="13,0" Margin="0,0,12,10" />
+                        <local:MyButton x:Name="BtnDailyTip" Text="今日提示" MinWidth="110" Height="35" Padding="13,0" Margin="0,0,12,10" />
+                    </WrapPanel>
+                </StackPanel>
+            </local:MyCard>
+            <local:MyCard Title="校验下载" Margin="0,0,0,15">
+                <StackPanel Margin="20,42,20,18">
+                    <TextBlock Text="HTTPS 下载地址" Margin="0,0,0,6" />
+                    <local:MyTextBox x:Name="InputDownloadUrl" Height="30" Margin="0,0,0,12" />
+                    <TextBlock Text="发布者提供的 SHA256（64 位十六进制）" Margin="0,0,0,6" />
+                    <local:MyTextBox x:Name="InputDownloadHash" Height="30" Margin="0,0,0,12" />
+                    <local:MyButton x:Name="BtnVerifiedDownload" Text="选择位置并下载" MinWidth="150" Height="35" Padding="13,0" HorizontalAlignment="Left" />
+                </StackPanel>
+            </local:MyCard>
+        </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageRight>

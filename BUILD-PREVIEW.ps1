@@ -19,10 +19,11 @@ if (!$msbuild) { throw 'Visual Studio MSBuild is required.' }
 $referenceRoot = Join-Path $env:USERPROFILE '.nuget\packages\microsoft.netframework.referenceassemblies.net48\1.0.3\build'
 & $msbuild 'Plain Craft Launcher 2\Plain Craft Launcher 2.vbproj' "/p:Configuration=$Configuration" "/p:TargetFrameworkRootPath=$referenceRoot\" /v:minimal /nologo
 if ($LASTEXITCODE -ne 0) { throw 'PCL build failed.' }
-$output = Join-Path $PSScriptRoot 'dist\PCLO-0.1.2'
+$output = Join-Path $PSScriptRoot 'dist\Plain-Craft-Launcher-Open-0.3.3-preview.2'
 New-Item -ItemType Directory -Force $output | Out-Null
-Copy-Item 'Plain Craft Launcher 2\bin\Plain Craft Launcher 2.exe' "$output\PCLO.exe" -Force
-Copy-Item 'Plain Craft Launcher 2\bin\Plain Craft Launcher 2.exe.config' "$output\PCLO.exe.config" -Force -ErrorAction SilentlyContinue
-Copy-Item 'LICENCE','LICENSE-PCLO-MIT','LICENSING.md','README.md','PREVIEW-README.md','VALIDATION.md' $output -Force
-Get-FileHash "$output\PCLO.exe" -Algorithm SHA256 | Format-List
+Copy-Item 'Plain Craft Launcher 2\bin\Plain Craft Launcher 2.exe' "$output\Plain Craft Launcher Open.exe" -Force
+Copy-Item 'Plain Craft Launcher 2\bin\Plain Craft Launcher 2.exe.config' "$output\Plain Craft Launcher Open.exe.config" -Force -ErrorAction SilentlyContinue
+Copy-Item 'LICENCE','LICENSE-PCLO-MIT','LICENSING.md','NETWORK-DESIGN.md','OPEN-FEATURES.md','THIRD-PARTY-NOTICES.md','README.md','PREVIEW-README.md','VALIDATION.md' $output -Force
+Copy-Item 'licenses' $output -Recurse -Force
+Get-FileHash "$output\Plain Craft Launcher Open.exe" -Algorithm SHA256 | Format-List
 Write-Host "Preview: $output"

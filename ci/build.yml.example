@@ -1,4 +1,4 @@
-name: Build PCLO
+name: Build Plain Craft Launcher Open
 on:
   push:
   pull_request:
@@ -16,10 +16,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       - uses: microsoft/setup-msbuild@v3
-      - name: Build PCLO preview
+      - name: Build Plain Craft Launcher Open preview
         shell: pwsh
         run: ./BUILD-PREVIEW.ps1 -DotnetRoot $env:DOTNET_ROOT
       - uses: actions/upload-artifact@v7
         with:
-          name: PCLO-Windows
-          path: dist/PCLO-0.1.2/
+          name: Plain-Craft-Launcher-Open-Windows
+          path: dist/Plain-Craft-Launcher-Open-0.2.1/

@@ -707,6 +707,8 @@ ExitDataLoad:
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionOptiFine", If(Version.OptiFineAsMod, Nothing, Version.OptiFine))
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionLiteLoader", Version.ModLoaders.HasFlagF(ModLoaders.LiteLoader))
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionForge", If(Version.ModLoaders.HasFlagF(ModLoaders.Forge), Version.ModLoaderVersions(ModLoaders.Forge), Nothing))
+                    WriteIni(PathVersion & "PCL\Setup.ini", "VersionOpenLoaderName", Version.OpenLoaderName)
+                    WriteIni(PathVersion & "PCL\Setup.ini", "VersionOpenLoaderVersion", Version.OpenLoaderVersion)
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionNeoForge", If(Version.ModLoaders.HasFlagF(ModLoaders.NeoForge), Version.ModLoaderVersions(ModLoaders.NeoForge), Nothing))
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionVanillaName", Version.VanillaName)
                     WriteIni(PathVersion & "PCL\Setup.ini", "VersionVanilla", Version.Vanilla.ToString)
@@ -745,10 +747,10 @@ ExitDataLoad:
         ''' </summary>
         Public Function VersionDisplayName() As String
             'Mod Loader 信息
-            Dim ModLoaderInfo As String = ""
-            If Version.ModLoaders.HasFlagF(ModLoaders.Forge) Then ModLoaderInfo += ", Forge" & If(Version.ModLoaderVersions(ModLoaders.Forge) = "未知版本", "", " " & Version.ModLoaderVersions(ModLoaders.Forge))
+            Dim ModLoaderInfo As String = If(Version.OpenLoaderName Is Nothing, "", ", " & Version.OpenLoaderName & " " & Version.OpenLoaderVersion)
+            If Version.ModLoaders.HasFlagF(ModLoaders.Forge) AndAlso Not Version.IsCleanroom Then ModLoaderInfo += ", Forge" & If(Version.ModLoaderVersions(ModLoaders.Forge) = "未知版本", "", " " & Version.ModLoaderVersions(ModLoaders.Forge))
             If Version.ModLoaders.HasFlagF(ModLoaders.NeoForge) Then ModLoaderInfo += ", NeoForge" & If(Version.ModLoaderVersions(ModLoaders.NeoForge) = "未知版本", "", " " & Version.ModLoaderVersions(ModLoaders.NeoForge))
-            If Version.ModLoaders.HasFlagF(ModLoaders.Fabric) Then ModLoaderInfo += ", Fabric" & If(Version.ModLoaderVersions(ModLoaders.Fabric) = "未知版本", "", " " & Version.ModLoaderVersions(ModLoaders.Fabric))
+            If Version.ModLoaders.HasFlagF(ModLoaders.Fabric) AndAlso Version.OpenLoaderName <> "Legacy Fabric" Then ModLoaderInfo += ", Fabric" & If(Version.ModLoaderVersions(ModLoaders.Fabric) = "未知版本", "", " " & Version.ModLoaderVersions(ModLoaders.Fabric))
             If Version.HasOptiFine Then ModLoaderInfo += ", OptiFine" & If(Version.OptiFine = "未知版本", "", " " & Version.OptiFine.Replace("-", " ").Replace("_", " "))
             If Version.ModLoaders.HasFlagF(ModLoaders.LiteLoader) Then ModLoaderInfo += ", LiteLoader"
             '基础信息
@@ -1084,7 +1086,7 @@ OnLoaded:
                                     Dim Value = ReadIni(Instance.PathVersion & "PCL\Setup.ini", Key, Nothing)
                                     Return If(Value = "", Nothing, Value) '对老版本 Setup.ini 的空值兼容
                                 End Function
-                                Version = New McVersion(CachedVanillaName) With {.OptiFine = ReadCachedInfo("VersionOptiFine")}
+                                Version = New McVersion(CachedVanillaName) With {.OptiFine = ReadCachedInfo("VersionOptiFine"), .OpenLoaderName = ReadCachedInfo("VersionOpenLoaderName"), .OpenLoaderVersion = ReadCachedInfo("VersionOpenLoaderVersion")}
                                 For Each Loader In {ModLoaders.Fabric, ModLoaders.Forge, ModLoaders.NeoForge}
                                     Dim CachedVersion = ReadCachedInfo($"Version{Loader}")
                                     If CachedVersion IsNot Nothing Then Version.ModLoaderVersions(Loader) = CachedVersion
@@ -1848,12 +1850,7 @@ OnLoaded:
         '获取
         For Each Token As McLibEntry In Libs
             '检查器
-            Dim Checker As FileChecker
-            If Token.Name.ContainsIgnoreCase("labymod") Then
-                Checker = New FileChecker '不检查 LabyMod 的文件，它们提供的文件校验信息是错的（#3225）
-            Else
-                Checker = New FileChecker With {.ActualSize = If(Token.Size = 0, -1, Token.Size), .Hash = Token.SHA1}
-            End If
+            Dim Checker As New FileChecker With {.ActualSize = If(Token.Size = 0, -1, Token.Size), .Hash = Token.SHA1}
             'URL
             Dim Urls As New List(Of String)
             If Token.Url Is Nothing AndAlso Token.Name = "net.minecraftforge:forge:universal" Then '特判修复 Forge 部分 universal 文件缺失 URL（#5455）

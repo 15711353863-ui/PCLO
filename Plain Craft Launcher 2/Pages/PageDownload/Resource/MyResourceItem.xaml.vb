@@ -101,6 +101,9 @@ Public Class MyResourceItem
                 Case FormMain.PageSubType.DownloadResourcePack
                     TargetType = ResourceTypes.ResourcePack
                     TargetInstance = FrmDownloadResourcePack.Content.Loader.Input.GameVersion
+                Case FormMain.PageSubType.DownloadWorld
+                    TargetType = ResourceTypes.Map
+                    TargetInstance = ""
                 Case FormMain.PageSubType.DownloadShader
                     TargetType = ResourceTypes.Shader
                     TargetInstance = FrmDownloadShader.Content.Loader.Input.GameVersion

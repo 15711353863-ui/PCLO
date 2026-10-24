@@ -112,6 +112,7 @@ Public Class MyListItem
     ''' 在存在右侧按钮时，右边距会被自动设置为 5 + 按钮数 * 25。
     ''' </summary>
     Public Property MinPaddingRight As Integer = 4
+    Public Property UseSidebarLayout As Boolean
 
     '按钮
     Private _Buttons As IEnumerable(Of MyIconButton)
@@ -337,6 +338,29 @@ Public Class MyListItem
             End If
         End If
         LabTitle.Margin = New Thickness(4, 0, 0, If(Height < 40, 0, 2))
+        If UseSidebarLayout AndAlso PathLogo IsNot Nothing Then
+            PathLogo.Width = 20 : PathLogo.Height = 20
+            PathLogo.Margin = New Thickness(0)
+            PathLogo.HorizontalAlignment = HorizontalAlignment.Left
+            PathLogo.VerticalAlignment = VerticalAlignment.Center
+            PathLogo.RenderTransform = Transform.Identity
+            Dim Shape = TryCast(PathLogo, Shapes.Path)
+            If Shape IsNot Nothing AndAlso Shape.Data IsNot Nothing Then
+                Dim Geometry = Shape.Data.CloneCurrentValue()
+                Dim Bounds = Geometry.Bounds
+                If Bounds.Width > 0 AndAlso Bounds.Height > 0 Then
+                    Dim Scale = Math.Min(20 / Bounds.Width, 20 / Bounds.Height)
+                    Dim Transforms As New TransformGroup
+                    If Geometry.Transform IsNot Nothing Then Transforms.Children.Add(Geometry.Transform.CloneCurrentValue())
+                    Transforms.Children.Add(New TranslateTransform(-Bounds.X, -Bounds.Y))
+                    Transforms.Children.Add(New ScaleTransform(Scale, Scale))
+                    Transforms.Children.Add(New TranslateTransform(0, (20 - Bounds.Height * Scale) / 2))
+                    Geometry.Transform = Transforms
+                    Shape.Data = Geometry
+                    Shape.Stretch = Stretch.None
+                End If
+            End If
+        End If
     End Sub
 
     '勾选状态

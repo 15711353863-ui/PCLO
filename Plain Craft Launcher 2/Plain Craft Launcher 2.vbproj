@@ -709,6 +709,12 @@
     <Compile Include="Modules\Base\ModAnimation.vb" />
     <Compile Include="Modules\Base\MyBitmap.vb" />
     <Compile Include="Modules\ModMain.vb" />
+    <Compile Include="Modules\OpenAppearance.vb" />
+    <Compile Include="Pages\PageOpen.vb" />
+    <Compile Include="Pages\OpenAppearanceSettings.vb" />
+    <Compile Include="Modules\OpenLoaderInstall.vb" />
+    <Compile Include="Pages\PageDownload\OpenLoaderSelection.vb" />
+    <EmbeddedResource Include="Resources\Open\en-US.json"><LogicalName>PCL.Open.en-US.json</LogicalName></EmbeddedResource>
     <Compile Include="Modules\Base\ModBase.vb" />
     <Compile Include="My Project\AssemblyInfo.vb">
       <SubType>Code</SubType>
@@ -753,6 +759,7 @@
     <Resource Include="Images\icon.ico" />
     <Resource Include="Images\pclo.ico" />
     <Resource Include="Images\Heads\PCLO.png" />
+    <Resource Include="Images\Heads\OpenSplash.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Font.ttf" />

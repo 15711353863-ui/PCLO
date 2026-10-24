@@ -346,4 +346,5 @@ MaskFiles/
 # Local PCLO build and preview artifacts
 .build/
 dist/
+.preview-data/
 *.log

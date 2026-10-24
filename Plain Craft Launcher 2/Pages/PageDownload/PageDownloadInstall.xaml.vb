@@ -9,6 +9,7 @@ Public Class PageDownloadInstall
         LoadNeoForge.State = DlNeoForgeListLoader
         LoadOptiFabric.State = DlOptiFabricLoader
 
+        EnsureOpenLoaderUi()
         McDownloadForgeRecommendedRefresh()
     End Sub
 
@@ -89,6 +90,7 @@ Public Class PageDownloadInstall
         '启动 Fabric API、OptiFabric 加载
         DlFabricApiLoader.Start()
         DlOptiFabricLoader.Start()
+        LoadOpenLoaders()
 
         AniStart({
             AaOpacity(PanMinecraft, -PanMinecraft.Opacity, 70, 10),
@@ -183,6 +185,7 @@ Public Class PageDownloadInstall
         Static Ongoing As Boolean = False '#3742 中，LoadOptiFineGetError 会初始化 LoadOptiFine，触发事件 LoadOptiFine.StateChanged，导致再次调用 SelectReload
         If VanillaName Is Nothing OrElse Ongoing Then Return
         Ongoing = True
+        ReconcileOpenSelection()
         '主预览
         SelectNameUpdate()
         ImgLogo.Source = GetSelectLogo()
@@ -360,6 +363,7 @@ Public Class PageDownloadInstall
     ''' 清空已选择的项目。
     ''' </summary>
     Public Sub ClearSelected()
+        CancelOpenLoaders()
         VanillaName = Nothing
         VanillaData = Nothing
         VanillaIcon = Nothing
@@ -417,6 +421,7 @@ Public Class PageDownloadInstall
     ''' </summary>
     Public Function GetSelectName() As String
         Dim Name As String = VanillaName
+        If OpenLoaderKind IsNot Nothing AndAlso OpenLoaderRelease IsNot Nothing Then Return Name & "-" & OpenLoaderKind.Replace(" ", "-") & "_" & OpenVersion(OpenLoaderKind, OpenLoaderRelease)
         If SelectedFabric IsNot Nothing Then Name += "-Fabric " & SelectedFabric.BeforeFirst("+")
         If SelectedForge IsNot Nothing Then Name += "-Forge_" & SelectedForge.VersionName
         If SelectedNeoForge IsNot Nothing Then Name += "-NeoForge_" & SelectedNeoForge.VersionName.BeforeFirst("+")
@@ -1147,6 +1152,15 @@ Public Class PageDownloadInstall
         If e.Key = Key.Enter AndAlso IsInSelectPage AndAlso BtnStart.IsEnabled Then BtnStart_Click()
     End Sub
     Private Sub BtnStart_Click() Handles BtnStart.Click
+        If OpenLoaderKind IsNot Nothing AndAlso OpenLoaderRelease IsNot Nothing Then
+            Try
+                OpenLoaderInstall.Start(OpenLoaderKind, VanillaName, OpenLoaderRelease, TextSelectName.Text)
+                ExitSelectPage()
+            Catch Ex As Exception
+                MyMsgBox(Ex.Message, "安装失败")
+            End Try
+            Return
+        End If
         '提交安装申请
         Dim InstanceName As String = TextSelectName.Text
         Dim Request As New McInstallRequest With {

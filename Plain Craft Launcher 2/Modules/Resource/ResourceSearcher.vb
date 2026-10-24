@@ -74,6 +74,8 @@ Public Class ResourceSearcher
             Select Case Type
                 Case ResourceTypes.Mod
                     Address += "&classId=6"
+                Case ResourceTypes.Map
+                    Address += "&classId=17"
                 Case ResourceTypes.ModPack
                     Address += "&classId=4471"
                 Case ResourceTypes.DataPack

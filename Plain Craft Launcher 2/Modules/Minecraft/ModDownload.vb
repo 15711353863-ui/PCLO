@@ -44,7 +44,7 @@ Public Module ModDownload
         If IndexUrl = "" Then
             Return Nothing
         Else
-            Return New NetFile(DlSourceLauncherOrMetaGet(IndexUrl), IndexAddress, New FileChecker With {.IsJson = True})
+            Return New NetFile(DlSourceLauncherOrMetaGet(IndexUrl), IndexAddress, New FileChecker With {.IsJson = True, .Hash = IndexInfo("sha1"), .ActualSize = If(IndexInfo("size"), -1)})
         End If
     End Function
 
@@ -232,7 +232,7 @@ Public Module ModDownload
     Public DlClientListMojangLoader As New LoaderTask(Of String, DlClientListResult)("DlClientList Mojang", AddressOf DlClientListMojangMain)
     Private Sub DlClientListMojangMain(Loader As LoaderTask(Of String, DlClientListResult))
         Dim StartTime As Long = GetTimeMs()
-        Dim Json As JObject = NetRequestByClientRetry("https://launchermeta.mojang.com/mc/game/version_manifest.json", RequireJson:=True).DeserializeJson()
+        Dim Json As JObject = NetRequestByClientRetry("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Versions As JArray = Json("versions")
             If Versions.Count < 200 Then Throw New Exception("获取到的版本列表长度不足（" & Json.ToString & "）")
@@ -272,12 +272,11 @@ Public Module ModDownload
     ''' </summary>
     Public DlClientListBmclapiLoader As New LoaderTask(Of String, DlClientListResult)("DlClientList Bmclapi", AddressOf DlClientListBmclapiMain)
     Private Sub DlClientListBmclapiMain(Loader As LoaderTask(Of String, DlClientListResult))
-        Dim Json As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/mc/game/version_manifest.json", RequireJson:=True).DeserializeJson()
+        Dim Json As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Versions As JArray = Json("versions")
             If Versions.Count < 200 Then Throw New Exception("获取到的版本列表长度不足（" & Json.ToString & "）")
             '添加 PCL 特供项
-            If FileUtils.Exists(PathTemp & "Cache\download.json") Then Versions.Merge(FileUtils.ReadAsJson(PathTemp & "Cache\download.json"))
             '检查是否有要求的版本（#5195）
             If Not String.IsNullOrEmpty(Loader.Input) Then
                 Dim Id = Loader.Input
@@ -450,7 +449,7 @@ Public Module ModDownload
     ''' </summary>
     Public DlOptiFineListBmclapiLoader As New LoaderTask(Of Integer, DlOptiFineListResult)("DlOptiFineList Bmclapi", AddressOf DlOptiFineListBmclapiMain)
     Private Sub DlOptiFineListBmclapiMain(Loader As LoaderTask(Of Integer, DlOptiFineListResult))
-        Dim Json As JArray = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/optifine/versionList", RequireJson:=True).DeserializeJson()
+        Dim Json As JArray = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/optifine/versionList", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Versions As New List(Of DlOptiFineListEntry)
             For Each Token As JObject In Json
@@ -535,7 +534,7 @@ Public Module ModDownload
     Public DlForgeListBmclapiLoader As New LoaderTask(Of Integer, DlForgeListResult)("DlForgeList Bmclapi", AddressOf DlForgeListBmclapiMain)
     Private Sub DlForgeListBmclapiMain(Loader As LoaderTask(Of Integer, DlForgeListResult))
         Dim Result As JArray = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/forge/minecraft",
-                                                       Encoding:=Encoding.Default, RequireJson:=True).DeserializeJson()
+                                                       Encoding:=Encoding.Default, RequireJson:=True, RaceSources:=False).DeserializeJson()
         Dim Names As List(Of String) = Result.Select(Function(v) v.ToString).ToList
         If Names.Count < 10 Then Throw New Exception("获取到的版本数量不足")
         Loader.Output = New DlForgeListResult With {.IsOfficial = False, .SourceName = "BMCLAPI", .Value = Names}
@@ -742,7 +741,7 @@ Public Module ModDownload
     ''' </summary>
     Public Sub DlForgeVersionBmclapiMain(Loader As LoaderTask(Of String, List(Of DlForgeVersionEntry)))
         Dim Json As JArray = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/forge/minecraft/" &
-            Loader.Input.Replace("-", "_"), RequireJson:=True).DeserializeJson() '兼容 Forge 1.7.10-pre4，#4057
+            Loader.Input.Replace("-", "_"), RequireJson:=True, RaceSources:=False).DeserializeJson() '兼容 Forge 1.7.10-pre4，#4057
         Dim Versions As New List(Of DlForgeVersionEntry)
         Try
             Dim Recommended As String = McDownloadForgeRecommendedGet(Loader.Input)
@@ -905,8 +904,8 @@ Public Module ModDownload
     Public DlNeoForgeListOfficialLoader As New LoaderTask(Of Integer, DlNeoForgeListResult)("DlNeoForgeList Official", AddressOf DlNeoForgeListOfficialMain)
     Private Sub DlNeoForgeListOfficialMain(Loader As LoaderTask(Of Integer, DlNeoForgeListResult))
         '获取版本列表 JSON
-        Dim ResultLatest As String = NetRequestByClientRetry("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", RequireJson:=True)
-        Dim ResultLegacy As String = NetRequestByClientRetry("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", RequireJson:=True)
+        Dim ResultLatest As String = NetRequestByClientRetry("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", RequireJson:=True, RaceSources:=False)
+        Dim ResultLegacy As String = NetRequestByClientRetry("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge", RequireJson:=True, RaceSources:=False)
         If ResultLatest.Length < 100 OrElse ResultLegacy.Length < 100 Then Throw New Exception("获取到的版本列表长度不足（" & ResultLatest & "）")
         '解析
         Try
@@ -923,8 +922,8 @@ Public Module ModDownload
     Public DlNeoForgeListBmclapiLoader As New LoaderTask(Of Integer, DlNeoForgeListResult)("DlNeoForgeList Bmclapi", AddressOf DlNeoForgeListBmclapiMain)
     Public Sub DlNeoForgeListBmclapiMain(Loader As LoaderTask(Of Integer, DlNeoForgeListResult))
         '获取版本列表 JSON
-        Dim ResultLatest As String = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/neoforge", RequireJson:=True)
-        Dim ResultLegacy As String = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", RequireJson:=True)
+        Dim ResultLatest As String = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/neoforge", RequireJson:=True, RaceSources:=False)
+        Dim ResultLegacy As String = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/neoforge/meta/api/maven/details/releases/net/neoforged/forge", RequireJson:=True, RaceSources:=False)
         If ResultLatest.Length < 100 OrElse ResultLegacy.Length < 100 Then Throw New Exception("获取到的版本列表长度不足（" & ResultLatest & "）")
         '解析
         Try
@@ -1029,7 +1028,7 @@ Public Module ModDownload
     ''' </summary>
     Public DlLiteLoaderListOfficialLoader As New LoaderTask(Of Integer, DlLiteLoaderListResult)("DlLiteLoaderList Official", AddressOf DlLiteLoaderListOfficialMain)
     Private Sub DlLiteLoaderListOfficialMain(Loader As LoaderTask(Of Integer, DlLiteLoaderListResult))
-        Dim Result As JObject = NetRequestByClientRetry("https://dl.liteloader.com/versions/versions.json", RequireJson:=True).DeserializeJson()
+        Dim Result As JObject = NetRequestByClientRetry("https://dl.liteloader.com/versions/versions.json", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Json As JObject = Result("versions")
             Dim Versions As New List(Of DlLiteLoaderListEntry)
@@ -1057,7 +1056,7 @@ Public Module ModDownload
     ''' </summary>
     Public DlLiteLoaderListBmclapiLoader As New LoaderTask(Of Integer, DlLiteLoaderListResult)("DlLiteLoaderList Bmclapi", AddressOf DlLiteLoaderListBmclapiMain)
     Private Sub DlLiteLoaderListBmclapiMain(Loader As LoaderTask(Of Integer, DlLiteLoaderListResult))
-        Dim Result As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/maven/com/mumfrey/liteloader/versions.json", RequireJson:=True).DeserializeJson()
+        Dim Result As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/maven/com/mumfrey/liteloader/versions.json", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Json As JObject = Result("versions")
             Dim Versions As New List(Of DlLiteLoaderListEntry)
@@ -1128,7 +1127,7 @@ Public Module ModDownload
     ''' </summary>
     Public DlFabricListOfficialLoader As New LoaderTask(Of Integer, DlFabricListResult)("DlFabricList Official", AddressOf DlFabricListOfficialMain)
     Private Sub DlFabricListOfficialMain(Loader As LoaderTask(Of Integer, DlFabricListResult))
-        Dim Result As JObject = NetRequestByClientRetry("https://meta.fabricmc.net/v2/versions", RequireJson:=True).DeserializeJson()
+        Dim Result As JObject = NetRequestByClientRetry("https://meta.fabricmc.net/v2/versions", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Output = New DlFabricListResult With {.IsOfficial = True, .SourceName = "Fabric 官方源", .Value = Result}
             If Output.Value("game") Is Nothing OrElse Output.Value("loader") Is Nothing OrElse Output.Value("installer") Is Nothing Then Throw New Exception("获取到的列表缺乏必要项")
@@ -1143,7 +1142,7 @@ Public Module ModDownload
     ''' </summary>
     Public DlFabricListBmclapiLoader As New LoaderTask(Of Integer, DlFabricListResult)("DlFabricList Bmclapi", AddressOf DlFabricListBmclapiMain)
     Private Sub DlFabricListBmclapiMain(Loader As LoaderTask(Of Integer, DlFabricListResult))
-        Dim Result As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/fabric-meta/v2/versions", RequireJson:=True).DeserializeJson()
+        Dim Result As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/fabric-meta/v2/versions", RequireJson:=True, RaceSources:=False).DeserializeJson()
         Try
             Dim Output = New DlFabricListResult With {.IsOfficial = False, .SourceName = "BMCLAPI", .Value = Result}
             If Output.Value("game") Is Nothing OrElse Output.Value("loader") Is Nothing OrElse Output.Value("installer") Is Nothing Then Throw New Exception("获取到的列表缺乏必要项")
@@ -1175,6 +1174,10 @@ Public Module ModDownload
     ''' </summary>
     Public Function DlModRequest(Url As String, Optional Method As HttpMethod = Nothing,
                                  Optional Content As String = Nothing, Optional ContentType As String = Nothing) As JToken
+        Url = PCLCS.Open.OpenEndpoints.CurseForgeAddress(Url)
+        If (Method Is Nothing OrElse Method = HttpMethod.Get) AndAlso Content Is Nothing Then
+            Return PCLCS.OpenNetwork.RaceTextAsync({Url, DlSourceModGet(Url)}, True, 30000, CurseForgeAPIKey).GetAwaiter().GetResult().DeserializeJson()
+        End If
         Dim Urls As New List(Of (Url As String, Timeout As Integer))
         Dim McimUrl As String = DlSourceModGet(Url)
         If McimUrl <> Url Then
@@ -1225,7 +1228,7 @@ Public Module ModDownload
     ''' 下载文件（而非获取版本列表）的时候，根据是否优先使用官方源决定使用 Url 的顺序。
     ''' </summary>
     Public Function DlSourceOrder(OfficialUrls As IEnumerable(Of String), MirrorUrls As IEnumerable(Of String)) As IEnumerable(Of String)
-        Return If(DlSourcePreferMojang, OfficialUrls.Union(MirrorUrls), MirrorUrls.Union(OfficialUrls))
+        Return PCLCS.OpenNetwork.Candidates(OfficialUrls.Concat(MirrorUrls))
     End Function
     ''' <summary>
     ''' 获取版本列表（而非下载文件）的时候，是否优先使用官方源。
@@ -1239,7 +1242,7 @@ Public Module ModDownload
     ''' 获取版本列表（而非下载文件）的时候，根据是否优先使用官方源决定使用 Url 的顺序。
     ''' </summary>
     Public Function DlVersionListOrder(OfficialUrls As IEnumerable(Of String), MirrorUrls As IEnumerable(Of String)) As IEnumerable(Of String)
-        Return If(DlVersionListPreferMojang, OfficialUrls.Union(MirrorUrls), MirrorUrls.Union(OfficialUrls))
+        Return PCLCS.OpenNetwork.Candidates(OfficialUrls.Concat(MirrorUrls))
     End Function
 
 
@@ -1260,30 +1263,7 @@ Public Module ModDownload
     ''' 下载 Libraries 文件。
     ''' </summary>
     Public Function DlSourceLibraryGet(Original As String) As IEnumerable(Of String)
-        If {"minecraftforge", "fabricmc", "neoforged"}.Any(Function(k) Original.Contains(k)) Then '不添加原版源
-            Return {
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-            }
-        Else
-            Return DlSourceOrder(
-                {Original},
-                {Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                 Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-                })
-        End If
+        Return PCLCS.OpenNetwork.Candidates({Original})
     End Function
     ''' <summary>
     ''' 下载 Launcher 或 Meta 文件。
@@ -1317,66 +1297,29 @@ Public Module ModDownload
     Private Sub DlSourceLoader(Of InputType, OutputType)(MainLoader As LoaderTask(Of InputType, OutputType),
                                                          LoaderList As List(Of KeyValuePair(Of LoaderTask(Of InputType, OutputType), Integer)),
                                                          Optional IsForceRestart As Boolean = False)
-        Dim WaitCycle As Integer = 0
-        Do While True
-            '检查状态
-            Dim BeforeLoadersAllFailed As Boolean = True
-            For Each SubLoader In LoaderList
-                If WaitCycle = 0 Then '判断是否可以不加载，直接使用已经加载好的结果
-                    If IsForceRestart Then Continue For '强制刷新，不行
-                    If (SubLoader.Key.Input Is Nothing Xor MainLoader.Input Is Nothing) OrElse
-                       (SubLoader.Key.Input IsNot Nothing AndAlso Not SubLoader.Key.Input.Equals(MainLoader.Input)) Then Continue For '父子加载器的输入不一样，也不行
-                End If
-                If SubLoader.Key.State <> LoadState.Failed Then BeforeLoadersAllFailed = False
-                If SubLoader.Key.State = LoadState.Finished Then
-                    '检查加载器成功
-                    MainLoader.Output = SubLoader.Key.Output
-                    DlSourceLoaderCancel(LoaderList)
+        Dim Active = LoaderList.Select(Function(entry) entry.Key).Distinct().ToList()
+        Dim Started = GetTimeMs()
+        Try
+            For Each Provider In Active
+                Provider.Start(MainLoader.Input, True)
+            Next
+            Do
+                If MainLoader.IsCanceled Then Return
+                Dim Winner = Active.FirstOrDefault(Function(provider) provider.State = LoadState.Finished)
+                If Winner IsNot Nothing Then
+                    MainLoader.Output = Winner.Output
+                    Logger.Info("版本列表竞速胜出：" & Winner.Name)
                     Return
-                ElseIf BeforeLoadersAllFailed Then
-                    '此前的加载器全部失败，直接启动后续加载器
-                    If WaitCycle < SubLoader.Value * 100 Then WaitCycle = SubLoader.Value * 100
                 End If
-            Next
-            '第一轮时：既然不直接使用已经加载好的结果，那就启动第一个加载器
-            If WaitCycle = 0 Then
-                LoaderList.First.Key.Start(MainLoader.Input, IsForceRestart)
-                For Each Loader In LoaderList.Skip(1)
-                    Loader.Key.State = LoadState.Waiting '将其他源标记为未启动，以确保可以切换下载源（#184）
-                Next
-            End If
-            '检查加载器失败或超时
-            For i = 0 To LoaderList.Count - 1
-                If WaitCycle <> LoaderList(i).Value * 100 Then Continue For
-                If i < LoaderList.Count - 1 AndAlso Not LoaderList.All(Function(l) l.Key.State = LoadState.Failed) Then
-                    '若还有下一个源，则启动下一个源
-                    LoaderList(i + 1).Key.Start(MainLoader.Input, IsForceRestart)
-                Else
-                    '若没有，则失败
-                    Dim ErrorInfo As Exception = Nothing
-                    For ii = 0 To LoaderList.Count - 1
-                        LoaderList(ii).Key.Input = Nothing '重置输入，以免以同样的输入“重试加载”时直接失败
-                        If LoaderList(ii).Key.Error IsNot Nothing Then
-                            If ErrorInfo Is Nothing OrElse LoaderList(ii).Key.Error.Message = "无" Then
-                                ErrorInfo = LoaderList(ii).Key.Error
-                            End If
-                        End If
-                    Next
-                    If ErrorInfo Is Nothing Then ErrorInfo = New TimeoutException("下载源连接超时")
-                    DlSourceLoaderCancel(LoaderList)
-                    Throw ErrorInfo
+                If Active.All(Function(provider) provider.State = LoadState.Failed OrElse provider.State = LoadState.Canceled) Then
+                    Throw New AggregateException("所有官方源和公益镜像均失败", Active.Where(Function(provider) provider.Error IsNot Nothing).Select(Function(provider) provider.Error))
                 End If
-                Exit For
-            Next
-            '计时
-            Thread.Sleep(10)
-            WaitCycle += 1
-            '检查父加载器中断
-            If MainLoader.IsCanceled Then
-                DlSourceLoaderCancel(LoaderList)
-                Return
-            End If
-        Loop
+                If GetTimeMs() - Started > 60000 Then Throw New TimeoutException("官方源与公益镜像连接超时")
+                Thread.Sleep(10)
+            Loop
+        Finally
+            DlSourceLoaderCancel(LoaderList)
+        End Try
     End Sub
     Private Sub DlSourceLoaderCancel(Of InputType, OutputType)(LoaderList As List(Of KeyValuePair(Of LoaderTask(Of InputType, OutputType), Integer)))
         For Each Loader In LoaderList

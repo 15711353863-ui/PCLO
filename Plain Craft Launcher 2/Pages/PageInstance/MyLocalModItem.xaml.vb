@@ -1,6 +1,14 @@
 Imports System.Windows.Forms
 
 Public Class MyLocalModItem
+    'Use the same native mod row for remote favorites and other local resource kinds.
+    Public Property PresentationOnly As Boolean
+    Public Sub SetPresentation(Name As String, Info As String, Optional Logo As String = Nothing)
+        PresentationOnly = True
+        Title = Name
+        Description = Info
+        If Logo IsNot Nothing Then PathLogo.Source = Logo
+    End Sub
 
 #Region "基础属性"
     Public Uuid As Integer = GetUuid()
@@ -13,7 +21,7 @@ Public Class MyLocalModItem
         End Get
         Set(value As String)
             Dim RawValue = value
-            LabTitle.TextDecorations = If(Entry.IsEnabled, Nothing, TextDecorations.Strikethrough)
+            LabTitle.TextDecorations = If(Entry Is Nothing OrElse Entry.IsEnabled, Nothing, TextDecorations.Strikethrough)
             If LabTitle.Text = value Then Return
             LabTitle.Text = value
             _Title = RawValue
@@ -63,6 +71,7 @@ Public Class MyLocalModItem
     '相关联的 Mod
     Public Property Entry As LocalResourceFile
         Get
+            If PresentationOnly Then Return Nothing
             Return Tag
         End Get
         Set(value As LocalResourceFile)
@@ -110,6 +119,7 @@ Public Class MyLocalModItem
     End Property
     Private Shared SwipToState As Boolean '被滑动到的目标应将 Checked 改为此值
     Private Sub Button_MouseSwipeStart(sender As Object, e As Object) Handles Me.MouseLeftButtonDown
+        If PresentationOnly Then Return
         If Parent Is Nothing Then Return 'Mod 可能已被删除（#3824）
         '开始滑动
         Dim Index = CType(Parent, StackPanel).Children.IndexOf(Me)
@@ -119,6 +129,7 @@ Public Class MyLocalModItem
         SwipToState = Not Checked
     End Sub
     Private Sub Button_MouseSwipe(sender As Object, e As Object) Handles Me.MouseEnter, Me.MouseLeave, Me.MouseLeftButtonUp
+        If PresentationOnly Then Return
         If Parent Is Nothing Then Return 'Mod 可能已被删除（#3824）
         '结束滑动
         If Mouse.LeftButton <> MouseButtonState.Pressed OrElse
@@ -178,7 +189,7 @@ Public Class MyLocalModItem
                         Anim.Add(AaOpacity(RectCheck, 1 - RectCheck.Opacity, 30))
                         RectCheck.VerticalAlignment = VerticalAlignment.Center
                         RectCheck.Margin = New Thickness(-3, 0, 0, 0)
-                        Anim.Add(AaColor(LabTitle, TextBlock.ForegroundProperty, If(Entry.IsEnabled, "ColorBrush2", "ColorBrush5"), 200))
+                        Anim.Add(AaColor(LabTitle, TextBlock.ForegroundProperty, If(Entry Is Nothing OrElse Entry.IsEnabled, "ColorBrush2", "ColorBrush5"), 200))
                     Else
                         '由有变无
                         Anim.Add(AaHeight(RectCheck, -RectCheck.ActualHeight, 120,, New AniEaseInFluent(AniEasePower.Weak)))
@@ -194,11 +205,11 @@ Public Class MyLocalModItem
                     If Checked Then
                         RectCheck.Height = 32
                         RectCheck.Opacity = 1
-                        LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry.IsEnabled, "ColorBrush2", "ColorBrush5"))
+                        LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry Is Nothing OrElse Entry.IsEnabled, "ColorBrush2", "ColorBrush5"))
                     Else
                         RectCheck.Height = 0
                         RectCheck.Opacity = 0
-                        LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry.IsEnabled, "ColorBrush1", "ColorBrushGray4"))
+                        LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry Is Nothing OrElse Entry.IsEnabled, "ColorBrush1", "ColorBrushGray4"))
                     End If
                     AniStop("MyLocalModItem Checked " & Uuid)
                 End If
@@ -326,6 +337,7 @@ Public Class MyLocalModItem
         Refresh()
     End Sub
     Public Sub Refresh()
+        If PresentationOnly Then Return
         If Not HasEnteredViewport Then Return '避免在未显示时因为资源更新而加载内容
         '更新
         If Entry.HasUpdate Then
@@ -372,9 +384,9 @@ Public Class MyLocalModItem
         End If
         Description = NewDescription
         If Checked Then
-            LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry.IsEnabled, "ColorBrush2", "ColorBrush5"))
+            LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry Is Nothing OrElse Entry.IsEnabled, "ColorBrush2", "ColorBrush5"))
         Else
-            LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry.IsEnabled, "ColorBrush1", "ColorBrushGray4"))
+            LabTitle.SetResourceReference(TextBlock.ForegroundProperty, If(Entry Is Nothing OrElse Entry.IsEnabled, "ColorBrush1", "ColorBrushGray4"))
         End If
         '主 Logo
         If Entry.Project IsNot Nothing Then

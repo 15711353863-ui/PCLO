@@ -7,12 +7,21 @@ Public Class PageDownloadResourceDetail
     ''' 当前页面应展示的内容类别。
     ''' 若当前页面是在查看前置时进入，则为 Any；这也能用于指示当前是否在查看前置。
     ''' </summary>
+    Private Sub Favorite_Click() Handles BtnFavorite.Click
+        Try
+            Dim Added = PCLCS.Open.Favorites.Toggle(Project.ToJson())
+            BtnFavorite.Text = OpenAppearance.Tr(If(Added, "已收藏", "收藏"))
+        Catch Ex As Exception
+            MyMsgBox(Ex.Message, "收藏失败")
+        End Try
+    End Sub
     Private TargetResourceType As ResourceTypes
     Private Project As ResourceProject
     Private TargetVersion As String
     Private TargetLoaders As ModLoaders
     Public Sub LoadPageArguments() Handles Me.Loaded
         Project = FrmMain.PageCurrent.Additional(0)
+        BtnFavorite.Text = OpenAppearance.Tr(If(PCLCS.Open.Favorites.Contains(CInt(Project.Platform), Project.Id), "已收藏", "收藏"))
         TargetVersion = FrmMain.PageCurrent.Additional(2)
         TargetLoaders = CType(FrmMain.PageCurrent.Additional(3), ModLoaders)
         If TargetLoaders <> ModLoaders.None AndAlso Not TargetLoaders.Flags.IsSingle Then TargetLoaders = TargetLoaders.Flags.First() '强制取第一个
@@ -387,6 +396,7 @@ GroupDone:
                     Case ResourceTypes.ResourcePack : Desc = "资源包"
                     Case ResourceTypes.Shader : Desc = "光影包"
                     Case ResourceTypes.DataPack : Desc = "数据包"
+                    Case ResourceTypes.Map : Desc = "世界"
                 End Select
                 '确认默认保存位置
                 Dim DefaultFolder As String = Nothing
@@ -396,6 +406,7 @@ GroupDone:
                         Case ResourceTypes.Mod : SubFolder = "mods\"
                         Case ResourceTypes.ResourcePack : SubFolder = "resourcepacks\"
                         Case ResourceTypes.Shader : SubFolder = "shaderpacks\"
+                        Case ResourceTypes.Map : SubFolder = "saves\"
                         Case ResourceTypes.DataPack : SubFolder = "" '导航到版本根目录
                     End Select
                     Dim IsInstanceSuitable As Func(Of McInstance, Boolean) = Nothing

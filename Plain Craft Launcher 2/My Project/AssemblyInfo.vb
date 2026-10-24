@@ -8,10 +8,10 @@ Imports System.Runtime.InteropServices
 
 '查看程序集特性的值
 
-<Assembly: AssemblyTitle("Plain Craft Launcher (PCL) Open 修改版（PCLO）")>
-<Assembly: AssemblyDescription("PCLO：第三方基于 PCL 的 Open 修改版")>
+<Assembly: AssemblyTitle("Plain Craft Launcher Open")>
+<Assembly: AssemblyDescription("Plain Craft Launcher Open：第三方基于 PCL 的衍生版")>
 <Assembly: AssemblyCompany("")>
-<Assembly: AssemblyProduct("PCLO")>
+<Assembly: AssemblyProduct("Plain Craft Launcher Open")>
 <Assembly: AssemblyCopyright("Copyright © 成都瓜皮龙科技有限公司")>
 <Assembly: AssemblyConfiguration("PCL2 Config Mark")>
 <Assembly: ComVisible(False)>
@@ -52,5 +52,5 @@ Imports System.Runtime.InteropServices
 ' 方法是按如下所示使用“*”
 
 <Assembly: AssemblyVersion("2.99.0.0")>
-<Assembly: AssemblyFileVersion("0.1.2.0")>
+<Assembly: AssemblyFileVersion("0.3.3.0")>
 <Assembly: NeutralResourcesLanguage("")>

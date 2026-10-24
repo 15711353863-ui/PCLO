@@ -28,6 +28,7 @@ Public Module ModNet
                     If(Result.Length > 2000, Result.Substring(0, 1000) & "..." & Result.Substring(Result.Length - 1000), Result))
                 End If
             End If
+            If RequireJson Then PCLCS.OpenNetwork.CaptureMetadata(Result)
             Return Result
         Catch ex As FormatException
             Throw
@@ -44,7 +45,11 @@ Public Module ModNet
     Public Function NetRequestByClientRetry(Url As String, Optional Method As HttpMethod = Nothing, Optional BackupUrl As String = Nothing,
             Optional Content As Object = Nothing, Optional ContentType As String = Nothing, Optional Accept As String = "*/*",
             Optional Headers As String(,) = Nothing, Optional RequireJson As Boolean = False,
-            Optional Encoding As Encoding = Nothing, Optional SimulateBrowserHeaders As Boolean = False) As String
+            Optional Encoding As Encoding = Nothing, Optional SimulateBrowserHeaders As Boolean = False, Optional RaceSources As Boolean = True) As String
+        If RaceSources AndAlso (Method Is Nothing OrElse Method = HttpMethod.Get) AndAlso Content Is Nothing AndAlso Headers Is Nothing AndAlso RequireJson Then
+            Dim Candidates = PCLCS.OpenNetwork.Candidates(If(String.IsNullOrEmpty(BackupUrl), {Url}, {Url, BackupUrl}))
+            If Candidates.Length > 1 Then Return PCLCS.OpenNetwork.RaceTextAsync(Candidates, True).GetAwaiter().GetResult()
+        End If
         Dim RetryCount As Integer = 0
         Dim RetryException As Exception = Nothing
         Dim StartTime As Long = GetTimeMs()
@@ -170,20 +175,8 @@ RequestFinished:
     ''' 不建议用于下载大文件。
     ''' </summary>
     Public Sub NetDownloadByClient(Url As String, LocalPath As String, Optional SimulateBrowserHeaders As Boolean = False)
-        Logger.Info($"通过网络请求直接下载小文件：{Url} → {LocalPath}")
-        Dim RetryCount As Integer = 0
-Retry:
-        Try
-            FileUtils.Write(LocalPath, SendRequest(Url, HttpMethod.Get, SimulateBrowserHeaders:=SimulateBrowserHeaders))
-        Catch ex As Exception
-            FileUtils.Delete(LocalPath)
-            ex.ThrowIfCanceled()
-            If RetryCount < 2 Then
-                RetryCount += 1
-                GoTo Retry
-            End If
-            Throw New HttpRequestException($"通过网络请求直接下载小文件失败（{LocalPath}）", ex)
-        End Try
+        'Use the same race, failover and verification path for small files too.
+        NetDownloadByLoader({Url}, LocalPath, SimulateBrowserHeaders:=SimulateBrowserHeaders)
     End Sub
 
     ''' <summary>
@@ -223,10 +216,7 @@ Retry:
             Directory.CreateDirectory(PathTemp & "Cache\Http\")
             SyncLock RequestClientLock
                 If RequestClient Is Nothing Then '延迟初始化，以避免在程序启动前加载 CacheCow 导致 DLL 加载失败
-                    RequestClient = CacheCow.Client.ClientExtensions.CreateClient(New CacheCow.Client.FileCacheStore.FileStore(PathTemp & "Cache/Http/"), New HttpClientHandler With {
-                        .AutomaticDecompression = DecompressionMethods.Deflate Or DecompressionMethods.GZip,
-                        .UseCookies = False '不设为 False 就不能从 Header 手动传入 Cookies
-                    })
+                    RequestClient = New HttpClient(PCLCS.OpenNetwork.CreateHandler())
                 End If
             End SyncLock
             '构建请求
@@ -301,9 +291,7 @@ Retry:
 
 #Region "多线程下载引擎"
 
-    Private ThreadClient As New HttpClient(New HttpClientHandler With {
-        .AutomaticDecompression = DecompressionMethods.Deflate Or DecompressionMethods.GZip
-    })
+    Private ThreadClient As New HttpClient(PCLCS.OpenNetwork.CreateHandler())
 
     ''' <summary>
     ''' 最大线程数。
@@ -592,6 +580,23 @@ Retry:
         ''' 用于在第一个线程出错时切换下载源。
         ''' </summary>
         Private FirstThreadSource As Integer = 0
+        Private PreferredSourceId As Integer = 0
+        Private IntegrityPrepared As Boolean = False
+        Private ReadOnly IntegrityLock As New Object
+
+        Public Sub PrepareIntegrity()
+            SyncLock IntegrityLock
+                If IntegrityPrepared Then Return
+                Dim Urls = Sources.Select(Function(s) s.Url).ToArray()
+                If String.IsNullOrWhiteSpace(Check.Hash) Then
+                    Check.Hash = PCLCS.OpenNetwork.ResolveDigestAsync(Urls).GetAwaiter().GetResult()
+                End If
+                If String.IsNullOrWhiteSpace(Check.Hash) AndAlso PCLCS.OpenNetwork.RequiresDigest(LocalPath, Urls) Then
+                    Throw New IO.InvalidDataException("下载源未提供可验证的文件摘要，已停止下载：" & LocalName)
+                End If
+                IntegrityPrepared = True
+            End SyncLock
+        End Sub
         ''' <summary>
         ''' 所有已经被标记为失败的，但未完整尝试过的，不允许断点续传的下载源。
         ''' </summary>
@@ -605,6 +610,7 @@ Retry:
         ''' 获取从某个源开始，第一个可用的源。
         ''' </summary>
         Private Function GetSource(Optional Id As Integer = 0) As NetSource
+            If Id = 0 Then Id = PreferredSourceId
             If Id >= Sources.Count OrElse Id < 0 Then Id = 0
             SyncLock LockSource
                 If HasAvailableSource(False) Then
@@ -789,14 +795,15 @@ Retry:
         Public Sub New(Urls As IEnumerable(Of String), LocalPath As String, Optional Checker As FileChecker = Nothing, Optional SimulateBrowserHeaders As Boolean = False)
             Dim Sources As New List(Of NetSource)
             Dim Count As Integer = 0
-            Urls = Urls.Distinct.ToArray
+            Urls = PCLCS.OpenNetwork.Candidates(Urls)
             For Each Source As String In Urls
                 Sources.Add(New NetSource With {.FailCount = 0, .Url = SecretCdnSign(Source.ReplaceLineEndings("").Trim), .Id = Count, .IsFailed = False, .Ex = Nothing})
                 Count += 1
             Next
             Me.Sources = Sources
             Me.LocalPath = LocalPath
-            Me.Check = Checker
+            Me.Check = If(Checker, New FileChecker With {.MinSize = 1})
+            If String.IsNullOrWhiteSpace(Me.Check.Hash) Then Me.Check.Hash = PCLCS.OpenNetwork.KnownDigest(Urls)
             Me.SimulateBrowserHeaders = SimulateBrowserHeaders
             Me.LocalName = PathUtils.GetLastPart(LocalPath)
         End Sub
@@ -909,6 +916,7 @@ StartThread:
             Dim Timeout As Integer = Math.Min(Math.Max(ConnectAverage, 15000) * (1 + Th.Source.FailCount), 30000)
             Th.State = NetState.Connecting
             Try
+                PrepareIntegrity()
                 Dim HttpDataCount As Integer = 0
                 If SourcesOnce.Contains(Th.Source) AndAlso Th <> Th.Source.SingleThread Then GoTo SourceBreak
                 HttpRequest = New HttpRequestMessage(HttpMethod.Get, Th.Source.Url)
@@ -916,7 +924,19 @@ StartThread:
                 CancelToken = New CancellationTokenSource(Timeout)
                 If Not Th.IsFirstThread Then HttpRequest.Headers.Range = New Headers.RangeHeaderValue(Th.DownloadStart, Nothing)
                 Dim ContentLength As Long = 0
-                Response = ThreadClient.SendAsync(HttpRequest, HttpCompletionOption.ResponseHeadersRead, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
+                If Th.IsFirstThread AndAlso HasAvailableSource(False) Then
+                    Dim Candidates As String()
+                    SyncLock LockSource
+                        Candidates = Sources.Where(Function(s) Not s.IsFailed).Select(Function(s) s.Url).ToArray()
+                    End SyncLock
+                    Dim Winner = PCLCS.OpenNetwork.RaceAsync(ThreadClient, HttpRequest, Candidates, Check.ActualSize, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
+                    Response = Winner.Response
+                    Th.Source = Sources.First(Function(s) s.Url = Winner.SourceUrl)
+                    PreferredSourceId = Th.Source.Id
+                    Logger.Trace(Function() $"下载源竞速胜出：{Th.Source.Url}")
+                Else
+                    Response = ThreadClient.SendAsync(HttpRequest, HttpCompletionOption.ResponseHeadersRead, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
+                End If
                 If Not Response.IsSuccessStatusCode Then '状态码检查
                     Throw New HttpRequestCodeException($"错误码 {Response.StatusCode} ({CInt(Response.StatusCode)})，{Th.Source.Url}", Response.StatusCode, Nothing)
                 End If
@@ -1202,7 +1222,14 @@ Retry:
                         End Using
                     End If
                     '检查文件
-                    Dim CheckResult As String = Check?.Check(LocalPath)
+                    Dim CheckResult As String = Nothing
+                    Try
+                        If Check.MinSize >= 0 AndAlso New FileInfo(LocalPath).Length < Check.MinSize Then Throw New InvalidDataException("文件大小不足")
+                        Dim Digest = PCLCS.OpenNetwork.VerifyFile(LocalPath, Check.Hash, Check.ActualSize, Check.IsJson)
+                        Logger.Trace(Function() $"文件校验通过：{LocalName}，SHA256={Digest}，发布方摘要={If(String.IsNullOrWhiteSpace(Check.Hash), "无，已进行长度/格式校验", Check.Hash)}")
+                    Catch IntegrityError As Exception
+                        CheckResult = IntegrityError.Message
+                    End Try
                     If CheckResult Is Nothing AndAlso Not IsUnknownSize AndAlso Check IsNot Nothing Then
                         If Check.ActualSize = -1 Then
                             CheckResult = (New FileChecker With {.ActualSize = FileSize}).Check(LocalPath) '不修改原始的 Checker，以免污染原始实例
@@ -1507,8 +1534,16 @@ FinishExCatch:
             End Try
         End Sub
         Private Function CheckExistingFile(FolderList As List(Of String), VersionFolders As List(Of String), File As NetFile) As String
+            File.PrepareIntegrity()
             '目标文件已存在
-            If File.Check.Check(File.LocalPath) Is Nothing Then Return File.LocalPath
+            If File.Check.Check(File.LocalPath) Is Nothing Then
+                Try
+                    PCLCS.OpenNetwork.VerifyFile(File.LocalPath, File.Check.Hash, File.Check.ActualSize, File.Check.IsJson)
+                    Return File.LocalPath
+                Catch IntegrityError As Exception
+                    Logger.Trace(Function() "本地缓存校验失败，重新下载：" & File.LocalName)
+                End Try
+            End If
             '在设置中禁用了复制
             If Settings.Get(Of Boolean)("SystemDebugSkipCopy") Then Return Nothing
             '没有可用的检查规则，只能开始下载

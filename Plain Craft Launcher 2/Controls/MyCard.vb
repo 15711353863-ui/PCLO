@@ -68,6 +68,7 @@ Public Class MyCard
         MainChrome.SetResourceReference(MyDropShadow.ColorProperty, "ColorObject1")
         Children.Insert(0, MainChrome)
         MainBorder = New Border With {.Background = New SolidColorBrush(Color.FromArgb(245, 255, 255, 255)), .CornerRadius = New CornerRadius(5), .IsHitTestVisible = False}
+        MainBorder.SetResourceReference(Border.BackgroundProperty, "ColorBrushSurface")
         Children.Insert(1, MainBorder)
         MainGrid = New Grid
         Children.Add(MainGrid)
